@@ -28,7 +28,7 @@ services:
       cardano-node run --topology /configs/${CARDANO_NETWORK:-mainnet}/topology.json
         --database-path /data
         --socket-path /ipc/node.socket
-        --config /configs/${CARDANO_NETWORK}/config.json
+        --config /configs/${CARDANO_NETWORK:-mainnet}/config.json
 
   cardano-db-sync:
     image: ghcr.io/intersectmbo/cardano-db-sync:13.2.0.1
@@ -90,7 +90,6 @@ services:
 
 volumes:
   db-sync-data:
-  postgres:
   node-db:
   node-ipc:
 
