@@ -25,7 +25,7 @@ services:
         max-file: "10"
     entrypoint: []
     command: >
-      cardano-node run --topology /configs/${NETWORK}/topology.json
+      cardano-node run --topology /configs/${CARDANO_NETWORK:-mainnet}/topology.json
         --database-path /data
         --socket-path /ipc/node.socket
         --config /configs/${CARDANO_NETWORK}/config.json
@@ -64,7 +64,7 @@ services:
       - node-ipc:/ipc
       - ./configs/cardano:/configs
     ports:
-      - ${WALLET_PORT}:8090
+      - ${WALLET_PORT:-8090}:8090
     entrypoint: []
     command: bash -c "
         ([[ $$NETWORK == \"mainnet\" ]] && $$CMD --mainnet) ||

@@ -14,7 +14,7 @@ services:
       NODE_CARDANO_WALLET_ID: ${WALLET_ID}
       NODE_CARDANO_WALLET_API_HOST: ${WALLET_HOST}
       NODE_CARDANO_WALLET_API_PORT: ${WALLET_PORT}
-      NODE_CARDANO_WALLET_ROUTING_HEADER_NAME:
+      NODE_CARDANO_WALLET_ROUTING_HEADER_NAME: ${WALLET_ROUTING_HEADER}
       NODE_CARDANO_DB_SYNC_HOST: ${PGHOST}${PGPORT:-5432}
       NODE_CARDANO_DB_SYNC_DATABASE: ${CARDANO_PGDATABASE:-cardano}
       NODE_CARDANO_DB_SYNC_USERNAME: ${PGUSER}
@@ -55,8 +55,8 @@ services:
       AGENT_DB_NAME: ${AGENT_PGDBDATABASE:-agent}
       AGENT_DB_USER: ${PGUSER}
       AGENT_DB_PASSWORD: ${PGPASSWORD}
-      DIDCOMM_SERVICE_URL: http://${DOCKERHOST}:${PORT}/didcomm
-      REST_SERVICE_URL: http://${DOCKERHOST}:${PORT}/prism-agent
+      DIDCOMM_SERVICE_URL: http://${AGENT_HOST}:${AGENT_PORT}/didcomm
+      REST_SERVICE_URL: http://${AGENT_HOST}:${AGENT_PORT}/prism-agent
       PRISM_NODE_HOST: prism-node
       PRISM_NODE_PORT: 50053
       VAULT_ADDR: ${VAULT_ADDR:-http://vault-server:8200}
@@ -75,11 +75,19 @@ services:
       API_KEY_ENABLED:
       API_KEY_AUTHENTICATE_AS_DEFAULT_USER:
       API_KEY_AUTO_PROVISIONING:
+      KEYCLOAK_ENABLED: true
+      KEYCLOAK_URL: http://keycloak:${KEYCLOAK_PORT:-8080}
+      KEYCLOAK_REALM: ${KEYCLOAK_REALM:-atala_realm}
+      KEYCLOAK_CLIENT_ID: ${KEYCLOAK_CLIENT_ID:-prism-agent}
+      KEYCLOAK_CLIENT_SECRET: ${KEYCLOAK_CLIENT_SECRET:-prism-agent-demo-secret}
+      KEYCLOAK_UMA_AUTO_UPGRADE_RPT: true
     depends_on:
       prism-node:
         condition: service_started
       vault-server:
         condition: service_healthy
+      keycloak:
+        condition: service_started
     healthcheck:
       test: ["CMD", "curl", "-f", "http://prism-agent:8085/_system/health"]
       interval: 30s

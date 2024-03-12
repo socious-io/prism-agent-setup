@@ -22,7 +22,7 @@ else
         curl -o - https://downloads.csnapshots.io/testnet/$(curl -s https://downloads.csnapshots.io/testnet/testnet-db-snapshot.json| jq -r .[].file_name ) | lz4 -c -d - | tar -x -C $NODE_DB
         mv $NODE_DB/db/* $NODE_DB/
         rm -rf $NODE_DB/db
-    elif [ $NETWORK == "sanchonet" ]
+    elif [ $CARDANO_NETWORK == "sanchonet" ]
     then echo "no cache for sancho";
     else
         echo "NETWORK must be mainnet or preprod or sanchonet"
