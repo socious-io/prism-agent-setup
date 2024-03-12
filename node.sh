@@ -31,7 +31,4 @@ else
 fi
 
 # start the services
-docker-compose \
-	-p ${NAME} \
-	-f docker-compose-node.yml \
-	--env-file .env
+docker-compose -p cardano -f docker-compose-node.yml --env-file .env

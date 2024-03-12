@@ -47,10 +47,6 @@ services:
       # Depend on both services to be healthy before starting.
       cardano-node:
         condition: service_healthy
-    secrets:
-      - postgres_password
-      - postgres_user
-      - postgres_db
     volumes:
       - db-sync-data:/var/lib/cexplorer
       - node-ipc:/node-ipc
