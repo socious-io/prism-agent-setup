@@ -1,0 +1,141 @@
+version: "3.8"
+
+services:
+
+  prism-node:
+    image: ghcr.io/input-output-hk/prism-node:${PRISM_NODE_VERSION}
+    environment:      
+      NODE_LEDGER: ${NODE_LEDGER}
+      NODE_PSQL_HOST: ${PGHOST}${PGPORT:-5432}
+      NODE_PSQL_DATABASE: ${NODE_PGDATABASE:-node}
+      NODE_PSQL_USERNAME: ${PGUSER}
+      NODE_PSQL_PASSWORD: ${PGPASSWORD}
+      NODE_CARDANO_NETWORK: ${CARDANO_NETWORK:-mainnet}
+      NODE_CARDANO_WALLET_ID: ${WALLET_ID}
+      NODE_CARDANO_WALLET_API_HOST: ${WALLET_HOST}
+      NODE_CARDANO_WALLET_API_PORT: ${WALLET_PORT}
+      NODE_CARDANO_WALLET_ROUTING_HEADER_NAME:
+      NODE_CARDANO_DB_SYNC_HOST: ${PGHOST}${PGPORT:-5432}
+      NODE_CARDANO_DB_SYNC_DATABASE: ${CARDANO_PGDATABASE:-cardano}
+      NODE_CARDANO_DB_SYNC_USERNAME: ${PGUSER}
+      NODE_CARDANO_DB_SYNC_PASSWORD: ${PGPASSWORD}
+    depends_on:
+      db:
+        condition: service_healthy
+
+  vault-server:
+    image: hashicorp/vault:latest
+    environment:
+      VAULT_ADDR: "http://0.0.0.0:8200"
+      VAULT_DEV_ROOT_TOKEN_ID: ${VAULT_DEV_ROOT_TOKEN_ID}
+    command: server -dev -dev-root-token-id=${VAULT_DEV_ROOT_TOKEN_ID}
+    cap_add:
+      - IPC_LOCK
+    healthcheck:
+      test: ["CMD", "vault", "status"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  prism-agent:
+    image: ghcr.io/input-output-hk/prism-agent:${PRISM_AGENT_VERSION}
+    environment:
+      POLLUX_DB_HOST: ${PGHOST}
+      POLLUX_DB_PORT: ${PGPORT:-5432}
+      POLLUX_DB_NAME: ${POLLUX_PGDBDATABASE:-pollux}
+      POLLUX_DB_USER: ${PGUSER}
+      POLLUX_DB_PASSWORD: ${DB_PASSWORD}
+      CONNECT_DB_HOST: ${PGHOST}
+      CONNECT_DB_PORT: ${PGPORT:-5432}
+      CONNECT_DB_NAME: ${CONNECT_PGDBDATABASE:-connect}
+      CONNECT_DB_USER: ${PGUSER}
+      CONNECT_DB_PASSWORD: ${PGPASSWORD}
+      AGENT_DB_HOST: ${PGHOST}
+      AGENT_DB_PORT: ${PGPORT:-5432}
+      AGENT_DB_NAME: ${AGENT_PGDBDATABASE:-agent}
+      AGENT_DB_USER: ${PGUSER}
+      AGENT_DB_PASSWORD: ${PGPASSWORD}
+      DIDCOMM_SERVICE_URL: http://${DOCKERHOST}:${PORT}/didcomm
+      REST_SERVICE_URL: http://${DOCKERHOST}:${PORT}/prism-agent
+      PRISM_NODE_HOST: prism-node
+      PRISM_NODE_PORT: 50053
+      VAULT_ADDR: ${VAULT_ADDR:-http://vault-server:8200}
+      VAULT_TOKEN: ${VAULT_DEV_ROOT_TOKEN_ID:-root}
+      SECRET_STORAGE_BACKEND: postgres
+      DEFAULT_WALLET_ENABLED:
+      DEFAULT_WALLET_SEED:
+      DEFAULT_WALLET_WEBHOOK_URL:
+      DEFAULT_WALLET_WEBHOOK_API_KEY:
+      DEFAULT_WALLET_AUTH_API_KEY:
+      GLOBAL_WEBHOOK_URL:
+      GLOBAL_WEBHOOK_API_KEY:
+      WEBHOOK_PARALLELISM:
+      ADMIN_TOKEN:
+      API_KEY_SALT:
+      API_KEY_ENABLED:
+      API_KEY_AUTHENTICATE_AS_DEFAULT_USER:
+      API_KEY_AUTO_PROVISIONING:
+    depends_on:
+      prism-node:
+        condition: service_started
+      vault-server:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://prism-agent:8085/_system/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  swagger-ui:
+    image: swaggerapi/swagger-ui:v5.1.0
+    environment:
+      - 'URLS=[
+        { name: "Prism Agent", url: "/docs/prism-agent/api/docs.yaml" }
+        ]'
+
+  apisix:
+    image: apache/apisix:2.15.0-alpine
+    volumes:
+      - ./apisix/conf/apisix.yaml:/usr/local/apisix/conf/apisix.yaml:ro
+      - ./apisix/conf/config.yaml:/usr/local/apisix/conf/config.yaml:ro
+    ports:
+      - "${PORT}:9080/tcp"
+    depends_on:
+      - prism-agent
+      - swagger-ui
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:22.0.4
+    ports:
+      - "9980:${KEYCLOAK_PORT:-8080}"
+    environment:
+      KEYCLOAK_ADMIN: ${KEYCLOAK_USER:-admin}
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_PASSWORD:-admin}
+    command: start-dev --hostname-url=http://localhost:9980 --health-enabled=true
+
+  keycloak-wait:
+    image: badouralix/curl-jq:ubuntu
+    command:
+      - /bin/bash
+      - -c
+      - until curl http://keycloak:${KEYCLOAK_PORT:-8080}/health; do sleep 1; done && echo "Keycloak is ready."
+    depends_on:
+      keycloak:
+        condition: service_started
+
+  keycloak-init:
+    image: badouralix/curl-jq:ubuntu
+    command: /workspace/init-script.sh
+    environment:
+      KEYCLOAK_BASE_URL: http://keycloak:${KEYCLOAK_PORT:-8080}
+      KEYCLOAK_ADMIN_USER: ${KEYCLOAK_USER:-admin}
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_PASSWORD:-admin}
+      REALM_NAME: atala-demo
+      PRISM_AGENT_CLIENT_SECRET: prism-agent-demo-secret
+    volumes:
+      - ./keycloak/init-script.sh:/workspace/init-script.sh
+    depends_on:
+      keycloak-wait:
+        condition: service_completed_successfully
