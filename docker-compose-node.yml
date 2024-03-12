@@ -25,16 +25,16 @@ services:
         max-file: "10"
     entrypoint: []
     command: >
-      cardano-node run --topology /configs/${CARDANO_NETWORK:-mainnet}/topology.json
+      cardano-node run --topology /configs/${NETWORK:-mainnet}/topology.json
         --database-path /data
         --socket-path /ipc/node.socket
-        --config /configs/${CARDANO_NETWORK:-mainnet}/config.json
+        --config /configs/${NETWORK:-mainnet}/config.json
 
   cardano-db-sync:
     image: ghcr.io/intersectmbo/cardano-db-sync:13.2.0.1
     environment:
       DISABLE_LEDGER: ${DISABLE_LEDGER}
-      NETWORK: ${CARDANO_NETWORK:-mainnet}
+      NETWORK: ${NETWORK:-mainnet}
       POSTGRES_HOST: ${PGHOST}
       POSTGRES_PORT: ${PGPORT:-5432}
       POSTGRES_USER: ${PGUSER}
@@ -71,7 +71,7 @@ services:
         ($$CMD --testnet /configs/${NETWORK}/byron-genesis.json)"
     environment:
       CMD: "cardano-wallet serve --node-socket /ipc/node.socket --database /wallet-db --listen-address 0.0.0.0"
-      NETWORK: ${CARDANO_NETWORK:-mainnet}
+      NETWORK: ${NETWORK:-mainnet}
     depends_on:
       # Depend on both services to be healthy before starting.
       cardano-node:
