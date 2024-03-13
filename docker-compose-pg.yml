@@ -29,5 +29,6 @@ volumes:
   postgres_data:
 
 networks:
-  postgres:
-    external: true
+    postgres_network:
+      name: postgres_network
+      driver: bridge
