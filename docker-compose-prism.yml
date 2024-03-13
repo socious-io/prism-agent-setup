@@ -95,8 +95,8 @@ services:
   apisix:
     image: apache/apisix:2.15.0-alpine
     volumes:
-      - ./apisix/conf/apisix.yaml:/usr/local/apisix/conf/apisix.yaml:ro
-      - ./apisix/conf/config.yaml:/usr/local/apisix/conf/config.yaml:ro
+      - ./configs/apisix.yaml:/usr/local/apisix/conf/apisix.yaml:ro
+      - ./configs/config.yaml:/usr/local/apisix/conf/config.yaml:ro
     ports:
       - "${APISIX:-9080}:9080/tcp"
     depends_on:
