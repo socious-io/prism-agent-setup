@@ -71,23 +71,15 @@ services:
       GLOBAL_WEBHOOK_API_KEY:
       WEBHOOK_PARALLELISM:
       ADMIN_TOKEN:
-      API_KEY_SALT:
-      API_KEY_ENABLED:
-      API_KEY_AUTHENTICATE_AS_DEFAULT_USER:
+      API_KEY_SALT: ${AGENT_APIKEY}
+      API_KEY_ENABLED: 'true'
+      API_KEY_AUTHENTICATE_AS_DEFAULT_USER: 'true'
       API_KEY_AUTO_PROVISIONING:
-      KEYCLOAK_ENABLED: true
-      KEYCLOAK_URL: http://keycloak:${KEYCLOAK_PORT:-8080}
-      KEYCLOAK_REALM: ${KEYCLOAK_REALM:-atala_realm}
-      KEYCLOAK_CLIENT_ID: ${KEYCLOAK_CLIENT_ID:-prism-agent}
-      KEYCLOAK_CLIENT_SECRET: ${KEYCLOAK_CLIENT_SECRET:-prism-agent-demo-secret}
-      KEYCLOAK_UMA_AUTO_UPGRADE_RPT: true
     depends_on:
       prism-node:
         condition: service_started
       vault-server:
         condition: service_healthy
-      keycloak:
-        condition: service_started
     healthcheck:
       test: ["CMD", "curl", "-f", "http://prism-agent:8085/_system/health"]
       interval: 30s
@@ -109,41 +101,7 @@ services:
       - ./apisix/conf/apisix.yaml:/usr/local/apisix/conf/apisix.yaml:ro
       - ./apisix/conf/config.yaml:/usr/local/apisix/conf/config.yaml:ro
     ports:
-      - "${PORT}:9080/tcp"
+      - "${APISIX:-9080}:9080/tcp"
     depends_on:
       - prism-agent
       - swagger-ui
-
-  keycloak:
-    image: quay.io/keycloak/keycloak:22.0.4
-    ports:
-      - "9980:${KEYCLOAK_PORT:-8080}"
-    environment:
-      KEYCLOAK_ADMIN: ${KEYCLOAK_USER:-admin}
-      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_PASSWORD:-admin}
-    command: start-dev --hostname-url=http://localhost:9980 --health-enabled=true
-
-  keycloak-wait:
-    image: badouralix/curl-jq:ubuntu
-    command:
-      - /bin/bash
-      - -c
-      - until curl http://keycloak:${KEYCLOAK_PORT:-8080}/health; do sleep 1; done && echo "Keycloak is ready."
-    depends_on:
-      keycloak:
-        condition: service_started
-
-  keycloak-init:
-    image: badouralix/curl-jq:ubuntu
-    command: /workspace/init-script.sh
-    environment:
-      KEYCLOAK_BASE_URL: http://keycloak:${KEYCLOAK_PORT:-8080}
-      KEYCLOAK_ADMIN_USER: ${KEYCLOAK_USER:-admin}
-      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_PASSWORD:-admin}
-      REALM_NAME: atala-demo
-      PRISM_AGENT_CLIENT_SECRET: prism-agent-demo-secret
-    volumes:
-      - ./keycloak/init-script.sh:/workspace/init-script.sh
-    depends_on:
-      keycloak-wait:
-        condition: service_completed_successfully
