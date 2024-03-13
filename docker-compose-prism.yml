@@ -19,9 +19,6 @@ services:
       NODE_CARDANO_DB_SYNC_DATABASE: ${CARDANO_PGDATABASE:-cardano}
       NODE_CARDANO_DB_SYNC_USERNAME: ${PGUSER}
       NODE_CARDANO_DB_SYNC_PASSWORD: ${PGPASSWORD}
-    depends_on:
-      db:
-        condition: service_healthy
 
   vault-server:
     image: hashicorp/vault:latest
