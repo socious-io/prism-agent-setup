@@ -101,7 +101,7 @@ services:
       - ./configs/apisix.yaml:/usr/local/apisix/conf/apisix.yaml:ro
       - ./configs/config.yaml:/usr/local/apisix/conf/config.yaml:ro
     ports:
-      - "${APISIX:-9080}:9080/tcp"
+      - "${AGENT_PORT}:9080/tcp"
     depends_on:
       - prism-agent
       - swagger-ui
