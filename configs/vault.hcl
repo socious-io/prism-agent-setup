@@ -16,6 +16,16 @@ storage "file" {
   path = "/vault/data"
 }
 
+path "auth/token/lookup-self" {
+  capabilities = ["read"]
+}
+
+path "sys/mounts/*" {
+  capabilities = ["create", "read", "update", "delete", "list"]
+}
+
+
+
 # Example configuration for using auto-unseal, using Google Cloud KMS. The
 # GKMS keys must already exist, and the cluster must have a service account
 # that is authorized to access GCP KMS.
