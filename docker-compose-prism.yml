@@ -30,8 +30,10 @@ services:
     environment:
       VAULT_ADDR: ${VAULT_ADDR:-http://127.0.0.1:8200}
       VAULT_API_ADDR: ${VAULT_ADDR:-http://127.0.0.1:8200}
+      VAULT_USE_SEMANTIC_PATH: 'false'
     volumes:
     - ./configs/vault.hcl:/vault/config/config.hcl:ro
+    - /opt/vault:/vault/data
     command: server
     cap_add:
       - IPC_LOCK
